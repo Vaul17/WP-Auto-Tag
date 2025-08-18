@@ -1,0 +1,225 @@
+<?php
+/*
+Plugin Name: Auto Tag and Categorize
+Description: Automatically assigns categories and tags to posts based on content keywords like "Shoes," "Cars," or "Boats". Includes a settings page to manage mappings.
+Version: 1.2
+Author: TC
+License: GPL2
+*/
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Initialize default mappings if none exist
+function atc_initialize_default_mappings() {
+    $default_mappings = [
+        // Categories
+        'shoes' => [
+            'type' => 'category',
+            'term' => 'Shoes',
+            'keywords' => ['shoe', 'shoes', 'footwear', 'sneaker', 'boot']
+        ],
+        'cars' => [
+            'type' => 'category',
+            'term' => 'Cars',
+            'keywords' => ['car', 'cars', 'vehicle', 'automobile', 'drive']
+        ],
+        'boats' => [
+            'type' => 'category',
+            'term' => 'Boats',
+            'keywords' => ['boat', 'boats', 'yacht', 'sail', 'marine']
+        ],
+        // Tags
+        'shoes_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Shoes',
+            'keywords' => ['shoe', 'shoes', 'footwear', 'sneaker', 'boot']
+        ],
+        'cars_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Cars',
+            'keywords' => ['car', 'cars', 'vehicle', 'automobile', 'drive']
+        ],
+        'boats_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Boats',
+            'keywords' => ['boat', 'boats', 'yacht', 'sail', 'marine']
+        ]
+    ];
+    if (!get_option('atc_mappings')) {
+        update_option('atc_mappings', $default_mappings);
+    }
+}
+register_activation_hook(__FILE__, 'atc_initialize_default_mappings');
+
+// Get current mappings
+function atc_get_keyword_mappings() {
+    return get_option('atc_mappings', []);
+}
+
+// Hook into save_post to process categories and tags
+add_action('save_post', 'atc_assign_categories_and_tags', 10, 3);
+function atc_assign_categories_and_tags($post_id, $post, $update) {
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+        return;
+    }
+    if (!in_array($post->post_status, ['publish', 'draft'])) {
+        return;
+    }
+    $content = strtolower($post->post_content);
+    $mappings = atc_get_keyword_mappings();
+    $categories = [];
+    $tags = [];
+    foreach ($mappings as $mapping) {
+        foreach ($mapping['keywords'] as $keyword) {
+            if (stripos($content, $keyword) !== false) {
+                if ($mapping['type'] === 'category') {
+                    $categories[] = $mapping['term'];
+                } elseif ($mapping['type'] === 'post_tag') {
+                    $tags[] = $mapping['term'];
+                }
+            }
+        }
+    }
+    if (empty($categories)) {
+        $categories[] = 'Uncategorized';
+    }
+    $category_ids = [];
+    foreach ($categories as $category) {
+        $term = get_term_by('name', $category, 'category');
+        if ($term) {
+            $category_ids[] = $term->term_id;
+        } else {
+            $new_term = wp_insert_term($category, 'category');
+            if (!is_wp_error($new_term)) {
+                $category_ids[] = $new_term['term_id'];
+            }
+        }
+    }
+    $tag_ids = [];
+    foreach ($tags as $tag) {
+        $term = get_term_by('name', $tag, 'post_tag');
+        if ($term) {
+            $tag_ids[] = $term->term_id;
+        } else {
+            $new_term = wp_insert_term($tag, 'post_tag');
+            if (!is_wp_error($new_term)) {
+                $tag_ids[] = $new_term['term_id'];
+            }
+        }
+    }
+    if (!empty($category_ids)) {
+        wp_set_post_categories($post_id, $category_ids, false);
+    }
+    if (!empty($tag_ids)) {
+        wp_set_post_tags($post_id, $tag_ids, false);
+    }
+}
+
+// Add settings page
+add_action('admin_menu', 'atc_add_settings_page');
+function atc_add_settings_page() {
+    add_options_page(
+        'Auto Tag and Categorize Settings',
+        'Auto Tag/Categorize',
+        'manage_options',
+        'auto-tag-categorize',
+        'atc_render_settings_page'
+    );
+}
+
+// Handle settings form submission
+add_action('admin_init', 'atc_handle_settings_submission');
+function atc_handle_settings_submission() {
+    if (!isset($_POST['atc_settings_nonce']) || !wp_verify_nonce($_POST['atc_settings_nonce'], 'atc_save_settings')) {
+        return;
+    }
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+    $mappings = [];
+    if (isset($_POST['atc_mappings'])) {
+        foreach ($_POST['atc_mappings'] as $key => $mapping) {
+            $term = sanitize_text_field($mapping['term']);
+            $type = sanitize_text_field($mapping['type']);
+            $keywords = array_map('sanitize_text_field', array_filter(explode(',', $mapping['keywords'])));
+            if (!empty($term) && in_array($type, ['category', 'post_tag']) && !empty($keywords)) {
+                $mappings[sanitize_key($term . '_' . $type . '_' . $key)] = [
+                    'type' => $type,
+                    'term' => $term,
+                    'keywords' => $keywords
+                ];
+            }
+        }
+    }
+    update_option('atc_mappings', $mappings);
+    add_settings_error('atc_messages', 'atc_message', __('Mappings updated successfully.', 'auto-tag-categorize'), 'updated');
+}
+
+// Render settings page
+function atc_render_settings_page() {
+    $mappings = atc_get_keyword_mappings();
+    ?>
+    <div class="wrap">
+        <h1>Auto Tag and Categorize Settings</h1>
+        <form method="post" action="">
+            <?php wp_nonce_field('atc_save_settings', 'atc_settings_nonce'); ?>
+            <h2>Manage Mappings</h2>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>Term</th>
+                        <th>Type</th>
+                        <th>Keywords (comma-separated)</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="atc-mappings">
+                    <?php foreach ($mappings as $key => $mapping) : ?>
+                        <tr>
+                            <td><input type="text" name="atc_mappings[<?php echo esc_attr($key); ?>][term]" value="<?php echo esc_attr($mapping['term']); ?>" required></td>
+                            <td>
+                                <select name="atc_mappings[<?php echo esc_attr($key); ?>][type]" required>
+                                    <option value="category" <?php selected($mapping['type'], 'category'); ?>>Category</option>
+                                    <option value="post_tag" <?php selected($mapping['type'], 'post_tag'); ?>>Tag</option>
+                                </select>
+                            </td>
+                            <td><input type="text" name="atc_mappings[<?php echo esc_attr($key); ?>][keywords]" value="<?php echo esc_attr(implode(', ', $mapping['keywords'])); ?>" required></td>
+                            <td><button type="button" class="button atc-remove-mapping">Remove</button></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <p><button type="button" class="button" id="atc-add-mapping">Add New Mapping</button></p>
+            <?php submit_button('Save Mappings'); ?>
+        </form>
+        <script>
+            document.getElementById('atc-add-mapping').addEventListener('click', function() {
+                const tbody = document.getElementById('atc-mappings');
+                const row = document.createElement('tr');
+                const randomKey = 'new_' + Math.random().toString(36).substr(2, 9);
+                row.innerHTML = `
+                    <td><input type="text" name="atc_mappings[${randomKey}][term]" value="" required></td>
+                    <td>
+                        <select name="atc_mappings[${randomKey}][type]" required>
+                            <option value="category">Category</option>
+                            <option value="post_tag">Tag</option>
+                        </select>
+                    </td>
+                    <td><input type="text" name="atc_mappings[${randomKey}][keywords]" value="" required></td>
+                    <td><button type="button" class="button atc-remove-mapping">Remove</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('atc-remove-mapping')) {
+                    e.target.closest('tr').remove();
+                }
+            });
+        </script>
+    </div>
+    <?php
+}
+?>
