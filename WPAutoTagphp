@@ -2,8 +2,8 @@
 /*
 Plugin Name: WP Auto Tag
 Description: Automatically assigns categories and tags to posts based on content keywords like "Shoes," "Cars," or "Boats". Includes a settings page to manage mappings.
-Version: 1.2
-Author: TC
+Version: 1.3
+Author: Vau17
 License: GPL2
 */
 
