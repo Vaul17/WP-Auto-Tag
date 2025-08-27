@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name: WP Auto Tag
-Description: Automatically assigns categories and tags to posts based on content keywords like "Shoes," "Cars," or "Boats". Includes a settings page to manage mappings.
-Version: 1.3
-Author: Vau17
+Plugin Name: Auto Tag and Categorize
+Description: Automatically assigns categories and tags to posts based on content keywords. Includes a settings page to manage mappings and features to rescan uncategorized/untagged posts or all posts.
+Version: 1.9.3
+Author: Vaul7
 License: GPL2
 */
 
@@ -16,40 +16,135 @@ if (!defined('ABSPATH')) {
 function atc_initialize_default_mappings() {
     $default_mappings = [
         // Categories
-        'shoes' => [
+        'announcements' => [
             'type' => 'category',
-            'term' => 'Shoes',
-            'keywords' => ['shoe', 'shoes', 'footwear', 'sneaker', 'boot']
+            'term' => 'Announcements',
+            'keywords' => ['announcement', 'announce', 'message', 'Message', 'interview', 'invite']
         ],
-        'cars' => [
+        'articles' => [
             'type' => 'category',
-            'term' => 'Cars',
-            'keywords' => ['car', 'cars', 'vehicle', 'automobile', 'drive']
+            'term' => 'Articles',
+            'keywords' => ['article', 'periodical', 'guide', 'addendum', 'divination']
         ],
-        'boats' => [
+        'events' => [
             'type' => 'category',
-            'term' => 'Boats',
-            'keywords' => ['boat', 'boats', 'yacht', 'sail', 'marine']
+            'term' => 'Events',
+            'keywords' => ['meetup', 'Livestreams', 'livestream', 'session', 'tonight', 'hangout', 'AMA', 'time', 'meeting']
         ],
         // Tags
-        'shoes_tag' => [
+        'announcements_tag' => [
             'type' => 'post_tag',
-            'term' => 'Shoes',
-            'keywords' => ['shoe', 'shoes', 'footwear', 'sneaker', 'boot']
+            'term' => 'Announcements',
+            'keywords' => ['announcement', 'announce', 'message', 'Message', 'interview', 'invite']
         ],
-        'cars_tag' => [
+        'lesson_tag' => [
             'type' => 'post_tag',
-            'term' => 'Cars',
-            'keywords' => ['car', 'cars', 'vehicle', 'automobile', 'drive']
+            'term' => 'Lesson',
+            'keywords' => ['lesson']
         ],
-        'boats_tag' => [
+        'calendar_tag' => [
             'type' => 'post_tag',
-            'term' => 'Boats',
-            'keywords' => ['boat', 'boats', 'yacht', 'sail', 'marine']
+            'term' => 'Calendar',
+            'keywords' => ['calendar', 'schedule', 'date']
+        ],
+        'checklist_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Checklist',
+            'keywords' => ['checklist']
+        ],
+        'dream_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Dream',
+            'keywords' => ['dream', 'dreaming', 'subconscious']
+        ],
+        'enochian_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Enochian',
+            'keywords' => ['enochian', 'angelic']
+        ],
+        'lhp_tag' => [
+            'type' => 'post_tag',
+            'term' => 'LHP',
+            'keywords' => ['lhp', 'left hand path']
+        ],
+        'livestreams_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Livestreams',
+            'keywords' => ['livestream', 'stream', 'broadcast', 'youtube', 'live']
+        ],
+        'magick_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Magick',
+            'keywords' => ['magick', 'magic', 'spell', 'spellwork', 'witchcraft']
+        ],
+        'meditation_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Meditation',
+            'keywords' => ['meditation', 'mindfulness', 'zen']
+        ],
+        'money_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Money',
+            'keywords' => ['money', 'finance', 'wealth']
+        ],
+        'ritual_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Ritual',
+            'keywords' => ['ritual', 'ceremony', 'rite']
+        ],
+        'tarot_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Tarot',
+            'keywords' => ['tarot']
+        ],
+        'divination_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Divination',
+            'keywords' => ['Divination', 'Ching', 'oracle']
+        ],
+        'meeting_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Meeting',
+            'keywords' => ['Meeting']
+        ],
+        'lessons_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Lessons',
+            'keywords' => ['lessons']
+        ],
+        'hangout_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Hangout',
+            'keywords' => ['hangout', 'discord', 'chats', 'chat', 'social']
+        ],
+        'ama_tag' => [
+            'type' => 'post_tag',
+            'term' => 'AMA',
+            'keywords' => ['AMA']
+        ],
+        'freemasonry_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Freemasonry',
+            'keywords' => ['freemasonry']
+        ],
+        'periodical_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Periodical',
+            'keywords' => ['periodical', 'publication']
+        ],
+        'meetup_tag' => [
+            'type' => 'post_tag',
+            'term' => 'Meetup',
+            'keywords' => ['Meetup']
         ]
     ];
-    if (!get_option('atc_mappings')) {
-        update_option('atc_mappings', $default_mappings);
+    try {
+        if (!get_option('atc_mappings')) {
+            update_option('atc_mappings', $default_mappings);
+            error_log('ATC: Default mappings initialized successfully.');
+        }
+    } catch (Exception $e) {
+        error_log('ATC: Failed to initialize default mappings: ' . $e->getMessage());
     }
 }
 register_activation_hook(__FILE__, 'atc_initialize_default_mappings');
@@ -68,24 +163,31 @@ function atc_assign_categories_and_tags($post_id, $post, $update) {
     if (!in_array($post->post_status, ['publish', 'draft'])) {
         return;
     }
-    $content = strtolower($post->post_content);
+    $content = strtolower($post->post_content . ' ' . $post->post_title);
     $mappings = atc_get_keyword_mappings();
     $categories = [];
     $tags = [];
-    foreach ($mappings as $mapping) {
+    $debug_log = ["Processing post $post_id: Content = " . substr($content, 0, 100) . "..."];
+
+    foreach ($mappings as $key => $mapping) {
         foreach ($mapping['keywords'] as $keyword) {
-            if (stripos($content, $keyword) !== false) {
-                if ($mapping['type'] === 'category') {
+            if (preg_match('/\b' . preg_quote($keyword, '/') . '\b/i', $content)) {
+                if ($mapping['type'] === 'category' && !in_array($mapping['term'], $categories)) {
                     $categories[] = $mapping['term'];
-                } elseif ($mapping['type'] === 'post_tag') {
+                    $debug_log[] = "Matched category '{$mapping['term']}' with keyword '$keyword' for post $post_id";
+                } elseif ($mapping['type'] === 'post_tag' && !in_array($mapping['term'], $tags)) {
                     $tags[] = $mapping['term'];
+                    $debug_log[] = "Matched tag '{$mapping['term']}' with keyword '$keyword' for post $post_id";
                 }
             }
         }
     }
+
     if (empty($categories)) {
         $categories[] = 'Uncategorized';
+        $debug_log[] = "No category matches for post $post_id, defaulting to Uncategorized";
     }
+
     $category_ids = [];
     foreach ($categories as $category) {
         $term = get_term_by('name', $category, 'category');
@@ -95,9 +197,13 @@ function atc_assign_categories_and_tags($post_id, $post, $update) {
             $new_term = wp_insert_term($category, 'category');
             if (!is_wp_error($new_term)) {
                 $category_ids[] = $new_term['term_id'];
+                $debug_log[] = "Created new category '$category' for post $post_id";
+            } else {
+                $debug_log[] = "Failed to create category '$category' for post $post_id: " . $new_term->get_error_message();
             }
         }
     }
+
     $tag_ids = [];
     foreach ($tags as $tag) {
         $term = get_term_by('name', $tag, 'post_tag');
@@ -107,15 +213,135 @@ function atc_assign_categories_and_tags($post_id, $post, $update) {
             $new_term = wp_insert_term($tag, 'post_tag');
             if (!is_wp_error($new_term)) {
                 $tag_ids[] = $new_term['term_id'];
+                $debug_log[] = "Created new tag '$tag' for post $post_id";
+            } else {
+                $debug_log[] = "Failed to create tag '$tag' for post $post_id: " . $new_term->get_error_message();
             }
         }
     }
+
     if (!empty($category_ids)) {
         wp_set_post_categories($post_id, $category_ids, false);
+        $debug_log[] = "Assigned categories: " . implode(', ', $categories) . " to post $post_id";
     }
     if (!empty($tag_ids)) {
         wp_set_post_tags($post_id, $tag_ids, false);
+        $debug_log[] = "Assigned tags: " . implode(', ', $tags) . " to post $post_id";
     }
+
+    // Log debug information
+    error_log("ATC Debug for post $post_id:\n" . implode("\n", $debug_log));
+}
+
+// Handle rescan of uncategorized/untagged posts
+add_action('admin_post_atc_rescan_posts', 'atc_handle_rescan_posts');
+function atc_handle_rescan_posts() {
+    if (!isset($_GET['atc_rescan_nonce']) || !wp_verify_nonce($_GET['atc_rescan_nonce'], 'atc_rescan_posts')) {
+        wp_die('Security check failed.');
+    }
+    if (!current_user_can('manage_options')) {
+        wp_die('Insufficient permissions.');
+    }
+
+    $args = [
+        'post_type' => 'post',
+        'post_status' => ['publish', 'draft'],
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+    ];
+    $posts = get_posts($args);
+    $uncategorized_term = get_term_by('name', 'Uncategorized', 'category');
+    $uncategorized_id = $uncategorized_term ? $uncategorized_term->term_id : 0;
+    $processed = 0;
+    $debug_log = [];
+
+    foreach ($posts as $post_id) {
+        $categories = wp_get_post_categories($post_id);
+        $tags = wp_get_post_tags($post_id, ['fields' => 'ids']);
+        $is_uncategorized = count($categories) === 1 && $uncategorized_id && in_array($uncategorized_id, $categories);
+        $is_untagged = empty($tags);
+
+        if ($is_uncategorized || $is_untagged) {
+            $post = get_post($post_id);
+            // Clear all categories and tags
+            wp_set_post_categories($post_id, [], false);
+            wp_set_post_tags($post_id, [], false);
+            // Re-run the assignment logic
+            atc_assign_categories_and_tags($post_id, $post, true);
+            $processed++;
+            $debug_log[] = "Rescanned post $post_id: Content = " . substr($post->post_content, 0, 100) . "...";
+        }
+    }
+
+    // Log rescan debug information
+    error_log("ATC Rescan Debug:\n" . implode("\n", $debug_log));
+
+    wp_redirect(add_query_arg([
+        'page' => 'auto-tag-categorize',
+        'atc_message' => urlencode("Rescanned $processed posts successfully. Check error log for details.")
+    ], admin_url('options-general.php')));
+    exit;
+}
+
+// Handle rescan of all posts
+add_action('admin_post_atc_rescan_all_posts', 'atc_handle_rescan_all_posts');
+function atc_handle_rescan_all_posts() {
+    if (!isset($_GET['atc_rescan_all_nonce']) || !wp_verify_nonce($_GET['atc_rescan_all_nonce'], 'atc_rescan_all_posts')) {
+        wp_die('Security check failed.');
+    }
+    if (!current_user_can('manage_options')) {
+        wp_die('Insufficient permissions.');
+    }
+
+    $args = [
+        'post_type' => 'post',
+        'post_status' => ['publish', 'draft'],
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+    ];
+    $posts = get_posts($args);
+    $processed = 0;
+    $debug_log = [];
+
+    foreach ($posts as $post_id) {
+        $post = get_post($post_id);
+        // Clear all categories and tags
+        wp_set_post_categories($post_id, [], false);
+        wp_set_post_tags($post_id, [], false);
+        // Re-run the assignment logic
+        atc_assign_categories_and_tags($post_id, $post, true);
+        $processed++;
+        $debug_log[] = "Rescanned all post $post_id: Content = " . substr($post->post_content, 0, 100) . "...";
+    }
+
+    // Log rescan debug information
+    error_log("ATC Rescan All Debug:\n" . implode("\n", $debug_log));
+
+    wp_redirect(add_query_arg([
+        'page' => 'auto-tag-categorize',
+        'atc_message' => urlencode("Rescanned all $processed posts successfully. Check error log for details.")
+    ], admin_url('options-general.php')));
+    exit;
+}
+
+// Handle reset mappings
+add_action('admin_post_atc_reset_mappings', 'atc_handle_reset_mappings');
+function atc_handle_reset_mappings() {
+    if (!isset($_GET['atc_reset_nonce']) || !wp_verify_nonce($_GET['atc_reset_nonce'], 'atc_reset_mappings')) {
+        wp_die('Security check failed.');
+    }
+    if (!current_user_can('manage_options')) {
+        wp_die('Insufficient permissions.');
+    }
+
+    delete_option('atc_mappings');
+    atc_initialize_default_mappings();
+
+    wp_redirect(add_query_arg([
+        'page' => 'auto-tag-categorize',
+        'atc_message' => urlencode("Mappings reset to default successfully.")
+    ], admin_url('options-general.php')));
+    exit;
 }
 
 // Add settings page
@@ -161,9 +387,31 @@ function atc_handle_settings_submission() {
 // Render settings page
 function atc_render_settings_page() {
     $mappings = atc_get_keyword_mappings();
+    $rescan_url = wp_nonce_url(admin_url('admin-post.php?action=atc_rescan_posts'), 'atc_rescan_posts', 'atc_rescan_nonce');
+    $rescan_all_url = wp_nonce_url(admin_url('admin-post.php?action=atc_rescan_all_posts'), 'atc_rescan_all_posts', 'atc_rescan_all_nonce');
+    $reset_mappings_url = wp_nonce_url(admin_url('admin-post.php?action=atc_reset_mappings'), 'atc_reset_mappings', 'atc_reset_nonce');
+    if (isset($_GET['atc_message'])) {
+        add_settings_error('atc_messages', 'atc_rescan_message', esc_html(urldecode($_GET['atc_message'])), 'updated');
+    }
+    settings_errors('atc_messages');
     ?>
     <div class="wrap">
         <h1>Auto Tag and Categorize Settings</h1>
+        <h2>Rescan Posts</h2>
+        <p>
+            <a href="<?php echo esc_url($rescan_url); ?>" class="button button-primary">Rescan Uncategorized/Untagged Posts</a>
+            <span>Click to rescan all posts that are uncategorized or have no tags and apply the current mappings. Check the error log for debug details.</span>
+        </p>
+        <h2>Rescan All Posts</h2>
+        <p>
+            <a href="<?php echo esc_url($rescan_all_url); ?>" class="button button-secondary" onclick="return confirm('Are you sure? This will clear and reassign categories and tags for ALL posts based on current mappings.');">Rescan All Posts</a>
+            <span>Warning: This will reset categories and tags for every post. Use with caution. Check the error log for details.</span>
+        </p>
+        <h2>Reset Mappings</h2>
+        <p>
+            <a href="<?php echo esc_url($reset_mappings_url); ?>" class="button button-secondary" onclick="return confirm('Are you sure? This will reset all mappings to the default values.');">Reset Mappings to Default</a>
+            <span>Click to reset the keyword mappings to the plugin's defaults.</span>
+        </p>
         <form method="post" action="">
             <?php wp_nonce_field('atc_save_settings', 'atc_settings_nonce'); ?>
             <h2>Manage Mappings</h2>
